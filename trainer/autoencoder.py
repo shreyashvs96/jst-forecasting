@@ -128,7 +128,7 @@ class TrainingJob:
         parser.add_argument("--train", type=str, default=os.environ["SM_CHANNEL_TRAINING"])
         
         return parser.parse_args()
-    
+        
     def run(self):
         args = self.parse_args()
         x = load_dataset(args.train, args.s3_filename)
@@ -146,16 +146,28 @@ class TrainingJob:
         with tf.device("/device:GPU:0"):
             ae = AutoEncoderTrainOnly(x, params)
             ae.fit()
-            
-        # Save the model
-        # A version number is needed for the serving container
-        # to load the model
-        version = "00000000.h5"
+        
+        #---
+        # Save model
+        version = "0"
         ckpt_dir = os.path.join(args.model_dir, version)
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
-        ae.model.save(ckpt_dir)
-                
+
+        model_save_path = os.path.join(ckpt_dir, "model.h5")
+        ae.model.save(model_save_path)
+        #---
+        # Save encoder
+        encoder_save_path = os.path.join(ckpt_dir, "encoder.h5")
+        ae.model.encoder.save(encoder_save_path)  
+        #---
+        # Save encoded output
+        x_encoded = ae.model.encoder.predict(x)
+        encoded_save_path = os.path.join(ckpt_dir, "x_encoded.npz")
+        np.savez_compressed(encoded_save_path, array=x_encoded)
+        #---
+        
+
 if __name__ == "__main__":
     tj = TrainingJob()
     tj.run()
