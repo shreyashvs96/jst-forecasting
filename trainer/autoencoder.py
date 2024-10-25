@@ -151,7 +151,7 @@ class TrainingJob:
         # A version number is needed for the serving container
         # to load the model
         version = "00000000"
-        ckpt_dir = os.path.join(args.model_dir, version)
+        ckpt_dir = os.path.join(args.model_dir, version, ".h5")
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
         ae.model.save(ckpt_dir)
