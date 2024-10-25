@@ -159,7 +159,11 @@ class TrainingJob:
         #---
         # Save encoder
         encoder_save_path = os.path.join(ckpt_dir, "encoder.h5")
-        ae.model.encoder.save(encoder_save_path)  
+        ae.encoder.save(encoder_save_path)
+        #---
+        # Save decoder
+        decoder_save_path = os.path.join(ckpt_dir, "decoder.h5")
+        ae.decoder.save(decoder_save_path)
         #---
         # Save encoded output
         x_encoded = ae.model.encoder.predict(x)
