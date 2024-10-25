@@ -110,7 +110,8 @@ class AutoEncoderTrainOnly:
     def save_artifacts(self, save_weights=True):
          #---
         # Save model
-        ckpt_dir = self.model_dir
+        version = "0"
+        ckpt_dir = os.path.join(self.model_dir, version)
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
         
@@ -124,6 +125,7 @@ class AutoEncoderTrainOnly:
         decoder_save_path = os.path.join(ckpt_dir, f"decoder{weights_suffix}.h5")
         
         if save_weights:
+            print(f"Saving model weights to: {self.model_dir}")
             self.model.save_weights(model_save_path)
             self.encoder.save_weights(encoder_save_path)
             self.decoder.save_weights(decoder_save_path)
