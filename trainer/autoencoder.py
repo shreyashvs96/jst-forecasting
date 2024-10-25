@@ -42,6 +42,8 @@ class AutoEncoderTrainOnly:
         
         self.train_ds = self.create_tf_datasets()
         
+        self.model_dir = params["model_dir"]
+        
     def build_autoencoder(self):
         
         self.encoder = self.build_encoder()
@@ -105,6 +107,37 @@ class AutoEncoderTrainOnly:
             
             tqdm.write(f"Epoch: {epoch+1}| Training loss: {training_loss:.2f}")
     
+    def save_artifacts(self, save_weights=True):
+         #---
+        # Save model
+        ckpt_dir = self.model_dir
+        if not os.path.exists(ckpt_dir):
+            os.makedirs(ckpt_dir)
+        
+        if save_weights:
+            weights_suffix = ".weights"
+        else: 
+            weights_suffix = ""
+        
+        model_save_path = os.path.join(ckpt_dir, f"model{weights_suffix}.h5")
+        encoder_save_path = os.path.join(ckpt_dir, f"encoder{weights_suffix}.h5")
+        decoder_save_path = os.path.join(ckpt_dir, f"decoder{weights_suffix}.h5")
+        
+        if save_weights:
+            self.model.save_weights(model_save_path)
+            self.encoder.save_weights(encoder_save_path)
+            self.decoder.save_weights(decoder_save_path)
+        else:
+            self.model.save(model_save_path)
+            self.encoder.save(encoder_save_path)
+            self.decoder.save(decoder_save_path)
+        #---
+        # Save encoded output
+        x_encoded = self.encoder.predict(self.x_train)
+        encoded_save_path = os.path.join(ckpt_dir, "x_encoded.npz")
+        np.savez_compressed(encoded_save_path, array=x_encoded)
+        #---
+    
 class TrainingJob:
     
     @staticmethod
@@ -141,37 +174,14 @@ class TrainingJob:
             "lr": args.learning_rate,
             "batch_size": args.batch_size,
             "latent_dim": args.latent_dim,
+            "model_dir": args.model_dir,
         }
         
         with tf.device("/device:GPU:0"):
             ae = AutoEncoderTrainOnly(x, params)
             ae.fit()
+            ae.save_artifacts()
         
-        #---
-        # Save model
-        version = "0"
-        ckpt_dir = os.path.join(args.model_dir, version)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
-
-        model_save_path = os.path.join(ckpt_dir, "model.h5")
-        ae.model.save(model_save_path)
-        #---
-        # Save encoder
-        encoder_save_path = os.path.join(ckpt_dir, "encoder.h5")
-        ae.encoder.save(encoder_save_path)
-        #---
-        # Save decoder
-        decoder_save_path = os.path.join(ckpt_dir, "decoder.h5")
-        ae.decoder.save(decoder_save_path)
-        #---
-        # Save encoded output
-        x_encoded = ae.model.encoder.predict(x)
-        encoded_save_path = os.path.join(ckpt_dir, "x_encoded.npz")
-        np.savez_compressed(encoded_save_path, array=x_encoded)
-        #---
-        
-
 if __name__ == "__main__":
     tj = TrainingJob()
     tj.run()
